@@ -5,6 +5,7 @@ import { useUser } from '../contexts/UserContext';
 import OnboardingForm from '../components/OnboardingForm';
 import AboutUs from '../components/AboutUs';
 import CRStatusForm from '../components/CRStatusForm';
+import CustomizedWorkflow from '../components/CustomizedWorkflow';
 
 function DebugUserInfo() {
   const { username } = useUser();
@@ -15,6 +16,7 @@ const tabs = [
   { id: 'onboarding', label: 'Onboarding to One-click-CICD' },
   { id: 'aboutUs', label: 'About Us' },
   { id: 'crStatus', label: 'CR Status' },
+  { id: 'customWorkflow', label: 'Custom Workflow' },
 ];
 
 export default function Main() {
@@ -28,8 +30,10 @@ export default function Main() {
         return <AboutUs />;
       case 'crStatus':
         return <CRStatusForm />;
-      default:
-        return <div>Select a tab</div>;
+        case 'customWorkflow':
+          return <CustomizedWorkflow />;
+        default:
+          return <div>Select a tab</div>;
     }
   };
 

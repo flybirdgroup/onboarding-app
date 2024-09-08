@@ -33,7 +33,7 @@ export default function CRStatusForm() {
       return Object.entries(filters).every(([key, value]) => {
         if (!value) return true;
         const itemValue = item[key as keyof CRStatus];
-        return itemValue.toString().toLowerCase().includes(value.toLowerCase());
+        return String(itemValue).toLowerCase().includes(String(value).toLowerCase());
       });
     });
   }, [data, filters]);
