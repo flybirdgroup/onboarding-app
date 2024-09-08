@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
@@ -10,8 +10,7 @@ interface WorkflowStep {
   position: { x: number; y: number };
 }
 
-interface Link {
-  id: string;
+interface Connection {
   from: string;
   to: string;
 }
@@ -23,6 +22,21 @@ const workflowSteps = [
   { type: 'SonartypeIQScan', icon: '🔍' },
   { type: 'Raise CR', icon: '📝' },
 ];
+
+const Arrow: React.FC<{ start: { x: number; y: number }, end: { x: number; y: number } }> = ({ start, end }) => {
+  const angle = Math.atan2(end.y - start.y, end.x - start.x);
+
+  return (
+    <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+      <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke="black" strokeWidth={2} />
+      <polygon 
+        points="-10,-5 0,0 -10,5" 
+        fill="black"
+        transform={`translate(${end.x},${end.y}) rotate(${angle * 180 / Math.PI})`}
+      />
+    </svg>
+  );
+};
 
 const WorkflowItem: React.FC<{ 
   step: WorkflowStep; 
@@ -70,8 +84,9 @@ const WorkflowItem: React.FC<{
 
 const CustomizedWorkflow: React.FC = () => {
   const [workflow, setWorkflow] = useState<WorkflowStep[]>([]);
-  const [links, setLinks] = useState<Link[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
   const [linkStart, setLinkStart] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const moveStep = (id: string, left: number, top: number) => {
     setWorkflow(prevWorkflow =>
@@ -96,33 +111,12 @@ const CustomizedWorkflow: React.FC = () => {
 
   const endLink = (id: string) => {
     if (linkStart && linkStart !== id) {
-      setLinks(prevLinks => [
-        ...prevLinks,
-        { id: `${linkStart}-${id}`, from: linkStart, to: id }
+      setConnections(prevConnections => [
+        ...prevConnections,
+        { from: linkStart, to: id }
       ]);
       setLinkStart(null);
     }
-  };
-
-  const renderLinks = () => {
-    return links.map(link => {
-      const fromStep = workflow.find(step => step.id === link.from);
-      const toStep = workflow.find(step => step.id === link.to);
-      if (!fromStep || !toStep) return null;
-
-      return (
-        <svg key={link.id} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-          <line
-            x1={fromStep.position.x + 50}
-            y1={fromStep.position.y + 50}
-            x2={toStep.position.x + 50}
-            y2={toStep.position.y + 50}
-            stroke="black"
-            strokeWidth="2"
-          />
-        </svg>
-      );
-    });
   };
 
   return (
@@ -139,8 +133,21 @@ const CustomizedWorkflow: React.FC = () => {
           </button>
         ))}
       </div>
-      <div className="border border-gray-300 h-96 relative">
-        {renderLinks()}
+      <div ref={containerRef} className="border border-gray-300 h-96 relative">
+        {connections.map((conn, index) => {
+          const fromStep = workflow.find(s => s.id === conn.from);
+          const toStep = workflow.find(s => s.id === conn.to);
+          if (fromStep && toStep) {
+            return (
+              <Arrow 
+                key={index}
+                start={{ x: fromStep.position.x + 50, y: fromStep.position.y + 25 }}
+                end={{ x: toStep.position.x, y: toStep.position.y + 25 }}
+              />
+            );
+          }
+          return null;
+        })}
         {workflow.map((step) => (
           <WorkflowItem 
             key={step.id} 
