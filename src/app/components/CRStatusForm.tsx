@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 interface CRStatus {
   EIM: string;
@@ -12,17 +12,33 @@ interface CRStatus {
   ICE: number;
 }
 
-const initialData: CRStatus[] = [
-  { EIM: '24520458723', ProjectID: 'Random1', CR: 'CR-35739583', Github: 'https://hello.com', Cyberflow: 'pass', SonartypeIQScan: 'pass', ICE: 90 },
-  { EIM: '38520458729', ProjectID: 'Random2', CR: 'CR-35739582', Github: 'https://hello.com', Cyberflow: 'pass', SonartypeIQScan: 'pass', ICE: 88 },
-  { EIM: '56520458753', ProjectID: 'Random3', CR: 'CR-35739581', Github: 'https://hello.com', Cyberflow: 'failed', SonartypeIQScan: 'pass', ICE: 76 },
-  { EIM: '24566458721', ProjectID: 'Random4', CR: 'CR-35739580', Github: 'https://hello.com', Cyberflow: 'failed', SonartypeIQScan: 'pass', ICE: 70 },
-  { EIM: '94520458456', ProjectID: 'Random5', CR: 'CR-35739579', Github: 'https://hello.com', Cyberflow: 'failed', SonartypeIQScan: 'pass', ICE: 75 },
-];
-
 export default function CRStatusForm() {
-  const [data] = useState<CRStatus[]>(initialData);
+  const [data, setData] = useState<CRStatus[]>([]);
   const [filters, setFilters] = useState<Partial<CRStatus>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/cr-status');
+        if (!response.ok) {
+          throw new Error('Failed to fetch data');
+        }
+        const result = await response.json();
+        setData(result);
+        setError(null);
+      } catch (err) {
+        setError('Failed to fetch data. Please try again later.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleFilterChange = (column: keyof CRStatus, value: string) => {
     setFilters(prev => ({ ...prev, [column]: value }));
@@ -39,6 +55,9 @@ export default function CRStatusForm() {
   }, [data, filters]);
 
   const columns: (keyof CRStatus)[] = ['EIM', 'ProjectID', 'CR', 'Github', 'Cyberflow', 'SonartypeIQScan', 'ICE'];
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="mt-4">
