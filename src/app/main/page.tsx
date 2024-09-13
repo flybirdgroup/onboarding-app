@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import OnboardingForm from '../components/OnboardingForm';
 import AboutUs from '../components/AboutUs';
-import CRStatusForm from '../components/CRStatusForm';
+import ProjectViewForm from '../components/ProjectViewForm';
 import CustomizedWorkflow from '../components/CustomizedWorkflow';
+import ScanningForm from '../components/ScanningForm';  
+import DeploymentForm from '../components/DeploymentForm';
 
 function DebugUserInfo() {
   const { username } = useUser();
@@ -15,8 +17,10 @@ function DebugUserInfo() {
 const tabs = [
   { id: 'onboarding', label: 'Onboarding to One-click-CICD' },
   { id: 'aboutUs', label: 'About Us' },
-  { id: 'crStatus', label: 'CR Status' },
+  { id: 'projectview', label: 'Project Overview' },
   { id: 'customWorkflow', label: 'Custom Workflow' },
+  { id: 'scanning', label: 'Scanning' },
+  { id: 'deployment', label: 'Deployment' },
 ];
 
 export default function Main() {
@@ -28,10 +32,14 @@ export default function Main() {
         return <OnboardingForm />;
       case 'aboutUs':
         return <AboutUs />;
-      case 'crStatus':
-        return <CRStatusForm />;
+      case 'projectview':
+          return <ProjectViewForm />;
         case 'customWorkflow':
           return <CustomizedWorkflow />;
+        case 'scanning':
+          return <ScanningForm />;
+        case 'deployment':
+          return <DeploymentForm />;
         default:
           return <div>Select a tab</div>;
     }

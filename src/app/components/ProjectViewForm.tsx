@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 
-interface CRStatus {
+interface ProjectView {
   EIM: string;
   ProjectID: string;
   CR: string;
@@ -12,9 +12,9 @@ interface CRStatus {
   ICE: number;
 }
 
-export default function CRStatusForm() {
-  const [data, setData] = useState<CRStatus[]>([]);
-  const [filters, setFilters] = useState<Partial<CRStatus>>({});
+export default function ProjectViewForm() {
+  const [data, setData] = useState<ProjectView[]>([]);
+  const [filters, setFilters] = useState<Partial<ProjectView>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +22,7 @@ export default function CRStatusForm() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/cr-status');
+        const response = await fetch('/api/project-status');
         if (!response.ok) {
           throw new Error('Failed to fetch data');
         }
@@ -40,7 +40,7 @@ export default function CRStatusForm() {
     fetchData();
   }, []);
 
-  const handleFilterChange = (column: keyof CRStatus, value: string) => {
+  const handleFilterChange = (column: keyof ProjectView, value: string) => {
     setFilters(prev => ({ ...prev, [column]: value }));
   };
 
@@ -48,20 +48,20 @@ export default function CRStatusForm() {
     return data.filter(item => {
       return Object.entries(filters).every(([key, value]) => {
         if (!value) return true;
-        const itemValue = item[key as keyof CRStatus];
+        const itemValue = item[key as keyof ProjectView];
         return String(itemValue).toLowerCase().includes(String(value).toLowerCase());
       });
     });
   }, [data, filters]);
 
-  const columns: (keyof CRStatus)[] = ['EIM', 'ProjectID', 'CR', 'Github', 'Cyberflow', 'SonartypeIQScan', 'ICE'];
+  const columns: (keyof ProjectView)[] = ['EIM', 'ProjectID', 'CR', 'Github', 'Cyberflow', 'SonartypeIQScan', 'ICE'];
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="mt-4">
-      <h2 className="text-2xl font-bold mb-4">CR Status</h2>
+      <h2 className="text-2xl font-bold mb-4">Project Overview</h2>
       <table className="w-full border-collapse border border-gray-300">
         <thead>
           <tr className="bg-gray-100">
