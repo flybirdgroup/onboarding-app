@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { Pool } from "pg";
+import { NextRequest, NextResponse } from 'next/server';
+import { Pool } from 'pg';
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
 });
 
-export async function GET() {
+export const GET = async (request: NextRequest) => {
   const client = await pool.connect();
   try {
     const result = await client.query('SELECT * FROM project_statuses;');
@@ -17,19 +17,19 @@ export async function GET() {
   } finally {
     client.release();
   }
-}
+};
 
-export async function POST(request: NextRequest) {
+export const POST = async (request: NextRequest) => {
   const data = await request.json();
 
-  const { EIM, PR, ProjectID, CR, Github, Cyberflow, SonartypeIQScan, ICE } = data;
+  const { eim, pr, projectid, cr, github, cyberflow, sonartypeiqscan, ice } = data;
 
   const client = await pool.connect();
   try {
     const result = await client.query(
-      `INSERT INTO project_statuses (EIM, PR, ProjectID, CR, Github, Cyberflow, SonartypeIQScan, ICE) 
+      `INSERT INTO project_statuses (eim, pr, projectid, cr, github, cyberflow, sonartypeiqscan, ice) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;`,
-      [EIM, PR, ProjectID, CR, Github, Cyberflow, SonartypeIQScan, ICE]
+      [eim, pr, projectid, cr, github, cyberflow, sonartypeiqscan, ice]
     );
     console.log('Saved entry:', result.rows[0]);
     return NextResponse.json(result.rows[0], { status: 201 });
@@ -39,4 +39,4 @@ export async function POST(request: NextRequest) {
   } finally {
     client.release();
   }
-}
+};

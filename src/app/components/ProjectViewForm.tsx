@@ -14,12 +14,14 @@ interface ProjectView {
   ice: number;
 }
 
-export default function ProjectViewForm() {
+const ProjectViewForm = () => {
   const [data, setData] = useState<ProjectView[]>([]);
   const [filters, setFilters] = useState<Partial<ProjectView>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentProject, setCurrentProject] = useState<Partial<ProjectView> | null>(null);
+  const [selectedEIM, setSelectedEIM] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -29,7 +31,7 @@ export default function ProjectViewForm() {
         throw new Error('Failed to fetch data');
       }
       const result = await response.json();
-      console.log('Fetched data:', result); // Log fetched data to check structure
+      console.log('Fetched data:', result); // Log fetched data for debugging
       setData(result);
       setError(null);
     } catch (err) {
@@ -44,29 +46,33 @@ export default function ProjectViewForm() {
     fetchData();
   }, []);
 
-  const handleCreate = async (project: ProjectView) => {
+  const handleCreateOrUpdate = async (project: ProjectView) => {
     try {
-      const response = await fetch('/api/project-status', {
-        method: 'POST',
+      const method = currentProject ? 'PUT' : 'POST';
+      const url = currentProject ? `/api/project-status/${currentProject.eim}` : '/api/project-status';
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(project)
+        body: JSON.stringify(project),
       });
+
       if (response.ok) {
         await fetchData(); // Re-fetch the data to get the updated list
+        setCurrentProject(null);
       } else {
-        throw new Error('Failed to create data');
+        throw new Error('Failed to create/update data');
       }
     } catch (err) {
-      console.error('Error creating data:', err);
+      console.error('Error creating/updating data:', err);
     }
   };
 
   const handleFilterChange = (column: keyof ProjectView, value: string) => {
-    setFilters(prev => ({ ...prev, [column]: value }));
+    setFilters((prev) => ({ ...prev, [column]: value }));
   };
 
   const filteredData = useMemo(() => {
-    return data.filter(item => {
+    return data.filter((item) => {
       return Object.entries(filters).every(([key, value]) => {
         if (!value) return true;
         const itemValue = item[key as keyof ProjectView];
@@ -74,6 +80,20 @@ export default function ProjectViewForm() {
       });
     });
   }, [data, filters]);
+
+  const handleEditButtonClick = () => {
+    if (selectedEIM) {
+      const project = data.find((item) => item.eim === selectedEIM);
+      if (project) {
+        setCurrentProject(project);
+        setIsModalOpen(true);
+      }
+    }
+  };
+
+  const handleSelect = (eim: string) => {
+    setSelectedEIM(eim);
+  };
 
   const columns: (keyof ProjectView)[] = ['eim', 'projectid', 'cr', 'github', 'cyberflow', 'sonartypeiqscan', 'ice'];
 
@@ -84,15 +104,25 @@ export default function ProjectViewForm() {
     <div className="mt-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Project Overview</h2>
-        <button onClick={() => setIsModalOpen(true)} className="px-4 py-2 bg-green-500 text-white rounded">
-          Create
-        </button>
+        <div>
+          <button onClick={() => setIsModalOpen(true)} className="px-4 py-2 bg-green-500 text-white rounded">
+            Create
+          </button>
+          <button
+            onClick={handleEditButtonClick}
+            className="ml-2 px-4 py-2 bg-blue-500 text-white rounded"
+            disabled={!selectedEIM}
+          >
+            Edit
+          </button>
+        </div>
       </div>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleCreate} />
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleCreateOrUpdate} project={currentProject} />
       <table className="w-full border-collapse border border-gray-300">
         <thead>
           <tr className="bg-gray-100">
-            {columns.map(column => (
+            <th className="border p-2"></th> {/* For selection radio button */}
+            {columns.map((column) => (
               <th key={column} className="border p-2">
                 {column}
                 <input
@@ -109,10 +139,21 @@ export default function ProjectViewForm() {
         <tbody>
           {filteredData.map((item, index) => (
             <tr key={index}>
-              {columns.map(column => (
+              <td className="border p-2">
+                <input
+                  type="radio"
+                  name="selectedProject"
+                  value={item.eim}
+                  checked={selectedEIM === item.eim}
+                  onChange={() => handleSelect(item.eim)}
+                />
+              </td>
+              {columns.map((column) => (
                 <td key={column} className="border p-2">
                   {column === 'github' ? (
-                    <a href={item[column]} className="text-blue-500 hover:underline">{item[column]}</a>
+                    <a href={item[column]} className="text-blue-500 hover:underline">
+                      {item[column]}
+                    </a>
                   ) : (
                     item[column]
                   )}
@@ -124,4 +165,6 @@ export default function ProjectViewForm() {
       </table>
     </div>
   );
-}
+};
+
+export default ProjectViewForm;
