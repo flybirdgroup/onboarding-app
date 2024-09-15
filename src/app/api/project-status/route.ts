@@ -1,14 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Pool } from "pg";
 
-const crStatusData = [
-  { EIM: '24520458723', PR: 'PR-123',ProjectID: 'BProject', CR: 'CR-35739583', Github: 'https://hello.com', Cyberflow: 'pass', SonartypeIQScan: 'pass', ICE: 90 },
-  { EIM: '38520458729', PR:'PR-146', ProjectID: 'LProject', CR: 'CR-35739582', Github: 'https://hello.com', Cyberflow: 'pass', SonartypeIQScan: 'pass', ICE: 88 },
-  { EIM: '56520458753', PR:'PR-346', ProjectID: 'MProject', CR: 'CR-35739581', Github: 'https://hello.com', Cyberflow: 'failed', SonartypeIQScan: 'pass', ICE: 76 },
-  { EIM: '24566458721', PR:'PR-776', ProjectID: 'MVProject', CR: 'CR-35739580', Github: 'https://hello.com', Cyberflow: 'failed', SonartypeIQScan: 'pass', ICE: 70 },
-  { EIM: '94520458456', PR:'PR-466', ProjectID: 'GProject', CR: 'CR-35739579', Github: 'https://hello.com', Cyberflow: 'failed', SonartypeIQScan: 'pass', ICE: 75 },
-];
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
 
 export async function GET() {
-  // In a real application, you would fetch this data from a database or external API
-  return NextResponse.json(crStatusData);
+  const client = await pool.connect();
+  try {
+    const result = await client.query('SELECT * FROM project_statuses;');
+    console.log('Fetched records:', result.rows); // Log fetched records
+    return NextResponse.json(result.rows);
+  } catch (err) {
+    console.error('Error querying data:', err);
+    return NextResponse.error();
+  } finally {
+    client.release();
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const data = await request.json();
+
+  const { EIM, PR, ProjectID, CR, Github, Cyberflow, SonartypeIQScan, ICE } = data;
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO project_statuses (EIM, PR, ProjectID, CR, Github, Cyberflow, SonartypeIQScan, ICE) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;`,
+      [EIM, PR, ProjectID, CR, Github, Cyberflow, SonartypeIQScan, ICE]
+    );
+    console.log('Saved entry:', result.rows[0]);
+    return NextResponse.json(result.rows[0], { status: 201 });
+  } catch (error) {
+    console.error('Error saving project status:', error);
+    return NextResponse.json({ message: 'Error saving project status' }, { status: 500 });
+  } finally {
+    client.release();
+  }
 }
