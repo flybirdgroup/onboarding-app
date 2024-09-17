@@ -6,7 +6,7 @@ import OnboardingForm from '../components/OnboardingForm';
 import AboutUs from '../components/AboutUs';
 import ProjectViewForm from '../components/ProjectViewForm';
 import CustomizedWorkflow from '../components/CustomizedWorkflow';
-import ScanningForm from '../components/ScanningForm';  
+import ScanningForm from '../components/ScanningForm';
 import DeploymentForm from '../components/DeploymentForm';
 
 function DebugUserInfo() {
@@ -33,15 +33,15 @@ export default function Main() {
       case 'aboutUs':
         return <AboutUs />;
       case 'projectview':
-          return <ProjectViewForm />;
-        case 'customWorkflow':
-          return <CustomizedWorkflow />;
-        case 'scanning':
-          return <ScanningForm />;
-        case 'deployment':
-          return <DeploymentForm />;
-        default:
-          return <div>Select a tab</div>;
+        return <ProjectViewForm />;
+      case 'customWorkflow':
+        return <CustomizedWorkflow />;
+      case 'scanning':
+        return <ScanningForm />;
+      case 'deployment':
+        return <DeploymentForm />;
+      default:
+        return <div>Select a tab</div>;
     }
   };
 
