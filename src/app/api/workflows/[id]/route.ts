@@ -1,61 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '../../../../lib/db';
+import { getSession, createNode, createRelationship, getNodes, getRelationships } from '../../../../lib/neo4j';
 
-export async function GET(req: NextRequest) {
-  const { id } = req.query;
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params;
 
-  const client = await pool.connect();
+  const session = getSession();
   try {
-    const workflowResult = await client.query('SELECT * FROM workflows WHERE id = $1', [id]);
-    const nodesResult = await client.query('SELECT * FROM nodes WHERE workflow_id = $1', [id]);
-    const connectionsResult = await client.query('SELECT * FROM connections WHERE workflow_id = $1', [id]);
-
-    return NextResponse.json({
-      workflow: workflowResult.rows[0],
-      nodes: nodesResult.rows,
-      connections: connectionsResult.rows,
-    }, { status: 200 });
-  } catch (err) {
-    console.error('Error querying data:', err);
-    return NextResponse.error();
-  } finally {
-    client.release();
-  }
-}
-
-export async function POST(req: NextRequest) {
-  const { name, nodes, connections } = await req.json();
-
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const workflowResult = await client.query(
-      'INSERT INTO workflows (name) VALUES ($1) RETURNING id',
-      [name]
+    // Fetch nodes and relationships for the given workflow ID
+    const workflowResult = await session.run(
+      'MATCH (n) WHERE n.workflowId = $id RETURN n',
+      { id }
     );
-    const workflowId = workflowResult.rows[0].id;
+    const relationshipResult = await session.run(
+      'MATCH (a)-[r]->(b) WHERE a.workflowId = $id AND b.workflowId = $id RETURN r',
+      { id }
+    );
 
-    for (const node of nodes) {
-      await client.query(
-        'INSERT INTO nodes (workflow_id, type, position, config) VALUES ($1, $2, $3, $4)',
-        [workflowId, node.type, node.position, node.config]
-      );
-    }
+    const nodes = workflowResult.records.map(record => record.get('n').properties);
+    const relationships = relationshipResult.records.map(record => record.get('r').properties);
 
-    for (const connection of connections) {
-      await client.query(
-        'INSERT INTO connections (workflow_id, from_node_id, to_node_id) VALUES ($1, $2, $3)',
-        [workflowId, connection.from, connection.to]
-      );
-    }
-
-    await client.query('COMMIT');
-    return NextResponse.json({ message: 'Workflow saved successfully', id: workflowId }, { status: 200 });
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Error saving data:', err);
-    return NextResponse.error();
+    return NextResponse.json({ nodes, relationships }, { status: 200 });
+  } catch (error) {
+    console.error('Error querying data:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   } finally {
-    client.release();
+    session.close();
   }
 }
+
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params;
+  const { type, properties, fromId, toId, relationshipType } = await req.json();
+
+  const session = getSession();
+  try {
+    if (type && properties) {
+      // Add workflowId to node properties
+      properties.workflowId = id;
+      const node = await createNode(type, properties);
+      return NextResponse.json(node, { status: 200 });
+    } else if (fromId && toId && relationshipType) {
+      const relationship = await createRelationship(fromId, toId, relationshipType);
+      return NextResponse.json(relationship, { status: 200 });
+    } else {
+      return NextResponse.json({ message: 'Invalid request' }, { status: 400 });
+    }
+  } catch (error) {
+    console.error('Error saving data:', error);

@@ -5,7 +5,7 @@ import { useUser } from '../contexts/UserContext';
 import OnboardingForm from '../components/OnboardingForm';
 import AboutUs from '../components/AboutUs';
 import ProjectViewForm from '../components/ProjectViewForm';
-import CustomizedWorkflow from '../components/CustomizedWorkflow';
+import Workflow from '../components/Workflow';
 import ScanningForm from '../components/ScanningForm';
 import DeploymentForm from '../components/DeploymentForm';
 
@@ -35,7 +35,7 @@ export default function Main() {
       case 'projectview':
         return <ProjectViewForm />;
       case 'customWorkflow':
-        return <CustomizedWorkflow />;
+        return <Workflow workflowId="your_workflow_id" />;
       case 'scanning':
         return <ScanningForm />;
       case 'deployment':
